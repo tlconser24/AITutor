@@ -1,1 +1,12 @@
 streamlit
+flask
+faiss-cpu
+numpy
+PyPDF2
+python-docx
+python-pptx
+pillow
+pytesseract
+sentence-transformers
+google-generativeai
+openai

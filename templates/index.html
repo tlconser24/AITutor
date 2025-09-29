@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Tutor</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  
+  <!-- CodeMirror for code editing -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/codemirror.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/mode/python/python.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <!-- Chat Section -->
+    <div class="chat">
+      <h2>AI Tutor Chat</h2>
+
+      <!-- File Upload -->
+      <div class="upload">
+        <h3>Upload Documents</h3>
+        <input type="file" id="fileInput">
+        <button onclick="uploadFile()">Upload</button>
+        <div id="uploadStatus"></div>
+      </div>
+
+      <div id="messages"></div>
+      <input type="text" id="userInput" placeholder="Type your question..." />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <!-- Code Editor Section -->
+    <div class="editor">
+      <h2>Code Editor</h2>
+      <textarea id="code">print("Hello World")</textarea>
+      <button onclick="runCode()">Run</button>
+      <pre id="output"></pre>
+    </div>
+  </div>
+
+  <script>
+    // Initialize CodeMirror editor
+    var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+      mode: "python",
+      lineNumbers: true,
+      theme: "default"
+    });
+
+    // Chat - user input
+    function sendMessage() {
+      let input = document.getElementById("userInput").value;
+      if (input.trim() === "") return;
+
+      let messages = document.getElementById("messages");
+      let userMsg = document.createElement("p");
+      userMsg.textContent = "You: " + input;
+      messages.appendChild(userMsg);
+
+      fetch("/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: input })
+      })
+      .then(response => response.json())
+      .then(data => {
+        let aiMsg = document.createElement("p");
+        aiMsg.textContent = "AI Tutor: " + data.answer;
+        messages.appendChild(aiMsg);
+        messages.scrollTop = messages.scrollHeight;
+      });
+
+      document.getElementById("userInput").value = "";
+    }
+
+    // Run Code - sends code to Flask backend
+    function runCode() {
+      let code = editor.getValue();
+      fetch("/run_code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: code })
+      })
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById("output").textContent = data.result;
+      });
+    }
+
+    // Upload file - sends to Flask backend
+    function uploadFile() {
+      const fileInput = document.getElementById("fileInput");
+      if (fileInput.files.length === 0) {
+        alert("Please select a file first.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+
+      fetch("/upload", {
+        method: "POST",
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById("uploadStatus").textContent = data.message || data.error;
+      });
+    }
+  </script>
+</body>
+</html>
